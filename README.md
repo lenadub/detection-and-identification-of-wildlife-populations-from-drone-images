@@ -1,3 +1,4 @@
+
 # Wildlife Species Detection from Drone Imagery
 
 ## Project Overview
@@ -250,3 +251,5 @@ model.eval()
 * All experiments were conducted using **Python 3.9+**. 
 * Training deep learning models requires a **GPU** for reasonable performance. 
 * Raw data and generated outputs are intentionally excluded from version control to ensure reproducibility.
+
+
