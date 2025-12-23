@@ -1,0 +1,6 @@
+sheep
+cattle
+seal
+kiang
+camelus
+zebra
