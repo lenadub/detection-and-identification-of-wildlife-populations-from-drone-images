@@ -3,38 +3,55 @@
 ## Project Overview
 
 This project focuses on the design and implementation of an automated computer vision system for detecting and identifying wildlife species in aerial drone imagery.  
-Using the **Wildlife Aerial Images from Drone (WAID)** dataset, the system detects multiple terrestrial species — **sheep, cattle, seal, camelus, kiang, and zebra** — using state-of-the-art deep learning–based object detection models.
+Using the **Wildlife Aerial Images from Drone (WAID)** dataset, the system detects multiple terrestrial species — **sheep, cattle, seal, kiang, camelus, and zebra** — using state-of-the-art deep learning–based object detection models.
 
-The project compares several modern detection architectures:
+The project investigates and compares multiple detection paradigms:
 - **YOLOv8** for fast, real-time detection
 - **Faster R-CNN** for high-accuracy region-based detection
-- **DETR (Transformer-based)** to evaluate attention mechanisms in complex aerial scenes
+- **DETR (Transformer-based)** to assess attention-based, set-prediction models
 
-The final objective is a reproducible and efficient detection pipeline that can support wildlife monitoring and ecological research.
+The final objective is a **reproducible, modular detection pipeline** suitable for wildlife monitoring and ecological research.
 
 ---
 
 ## Repository Structure
 
 ```text
-wildlife_detection/
+detection-and-identification-of-wildlife-populations-from-drone-images/
+│
 │── data/
-│   ├── raw/                 # Raw dataset (NOT tracked by git)
+│   ├── raw/                         # Raw WAID dataset (NOT tracked)
 │   │   ├── images/
 │   │   │   ├── train/
-│   │   │   ├── val/
+│   │   │   ├── valid/
 │   │   │   └── test/
 │   │   └── annotations/
 │   │       ├── train/
-│   │       ├── val/
+│   │       ├── valid/
 │   │       └── test/
-│   ├── classes.txt          # Class names (tracked)
-│   └── processed/           # Generated data (ignored by git)
+│   │
+│   ├── classes.txt                  # Class names (tracked)
+│   └── processed/                   # Optional generated data
 │
-│── notebooks/               # Jupyter notebooks (exploration & experiments)
-│── src/                     # Core reusable source code
-│── outputs/                 # Trained models, logs, visual results (ignored)
-│── requirements.txt         # Python dependencies
+│── notebooks/
+│   ├── data_exploration.ipynb
+│   ├── data_preprocessing.ipynb
+│   ├── evaluation_and_results.ipynb
+│   ├── model_training_detr.ipynb
+│   ├── model_training_faster_rcnn.ipynb
+│   ├── model_training_yolo.ipynb
+│   └── outputs/
+│       └── faster_rcnn_waid.pth          # Trained Faster
+│
+│── src/
+│   └── data/
+│       ├── __init__.py
+│       ├── dataset.py               # PyTorch Dataset (WAIDDataset)
+│       ├── preprocessing.py         # Resizing & normalization
+│       ├── augmentations.py         # Albumentations pipelines
+│       └── utils.py                 # Annotation & bbox utilities
+│
+│── requirements.txt
 │── README.md
 ````
 
@@ -42,38 +59,35 @@ wildlife_detection/
 
 ## Dataset Setup (Required)
 
-The **WAID dataset is not included** in this repository and must be downloaded manually from its official GitHub source:
+The **WAID dataset is not included** in this repository and must be downloaded manually from its official source:
 
 ➡️ **Dataset link:**
-`https://github.com/xiaohuicui/WAID`
+[https://github.com/xiaohuicui/WAID](https://github.com/xiaohuicui/WAID)
 
-### After downloading the dataset:
+### After downloading:
 
-1. Extract the dataset archive.
-
-2. Move the image folders into:
+1. Extract the dataset.
+2. Place images into:
 
    ```text
    data/raw/images/
    ```
-
-3. Move the label folders into:
+3. Place labels into:
 
    ```text
    data/raw/annotations/
    ```
 
    > If the dataset provides a folder named `labels/`, **rename it to `annotations/`**.
-
-4. Ensure the dataset follows this structure:
+4. Ensure the final structure is:
 
    ```text
    data/raw/images/train/
-   data/raw/images/val/
+   data/raw/images/valid/
    data/raw/images/test/
 
    data/raw/annotations/train/
-   data/raw/annotations/val/
+   data/raw/annotations/valid/
    data/raw/annotations/test/
    ```
 
@@ -87,7 +101,7 @@ Class names are defined in:
 data/classes.txt
 ```
 
-This file must contain **one class name per line**, in the exact order corresponding to YOLO class IDs:
+Content (one class per line, order matters):
 
 ```text
 sheep
@@ -98,9 +112,9 @@ camelus
 zebra
 ```
 
-**Important:**
-The order of classes in `classes.txt` must match the class IDs used in the annotation files.
-Do **not** change this order once training begins.
+⚠️ **Important:**
+The order of `classes.txt` must exactly match YOLO class indices used in annotation files.
+Changing this order will invalidate training and evaluation.
 
 ---
 
@@ -121,37 +135,35 @@ cd wildlife_detection
 python -m venv venv
 ```
 
-Activate the environment:
+Activate:
 
 * **Windows**
 
-```bash
-venv\Scripts\activate
-```
+  ```bash
+  venv\Scripts\activate
+  ```
 
 * **macOS / Linux**
 
-```bash
-source venv/bin/activate
-```
+  ```bash
+  source venv/bin/activate
+  ```
 
 ---
 
 ### 3. Install Dependencies
 
-From the project root directory:
-
 ```bash
 pip install -r requirements.txt
 ```
 
-This installs all required libraries for data processing, training, and evaluation.
-
 ---
 
-## Getting Started
+## Workflow Overview
 
-Begin with the data exploration notebook:
+### 1️⃣ Data Exploration
+
+Notebook:
 
 ```text
 notebooks/data_exploration.ipynb
@@ -160,15 +172,81 @@ notebooks/data_exploration.ipynb
 This notebook:
 
 * Verifies dataset integrity
-* Explores class distributions
+* Explores class imbalance
 * Analyzes bounding box sizes
 * Visualizes representative samples
 
 ---
 
+### 2️⃣ Preprocessing Pipeline
+
+Notebook:
+
+```text
+notebooks/data_preprocessing.ipynb
+```
+
+Implementation:
+
+* Core preprocessing functions are defined in:
+
+  ```text
+  src/data/preprocessing.py
+  ```
+* Augmentations are defined in:
+
+  ```text
+  src/data/augmentations.py
+  ```
+
+Preprocessing includes:
+
+* Image resizing to a fixed resolution
+* Pixel-value normalization
+* Optional data augmentation (training only)
+
+These steps are applied automatically through the dataset class:
+
+```python
+from src.data.dataset import WAIDDataset
+```
+
+This design ensures consistent preprocessing across training, validation, and testing.
+
+---
+
+### 3️⃣ Faster R-CNN Training
+
+Notebook:
+
+```text
+notebooks/model_training_faster_rcnn.ipynb
+```
+
+Key characteristics:
+
+* Uses `torchvision`’s Faster R-CNN with a ResNet-FPN backbone
+* Fine-tuned using transfer learning
+* Supports class-aware sampling to mitigate class imbalance
+* Validation loss monitored during training
+
+The trained model is saved as:
+
+```text
+outputs/faster_rcnn_waid.pth
+```
+
+The trained model can be loaded for evaluation using:
+
+```python
+model.load_state_dict(torch.load("outputs/faster_rcnn_waid.pth"))
+model.eval()
+```
+
+---
+
 ## Notes
 
-* All experiments were conducted using **Python 3.9+**.
-* Training deep learning models requires a **GPU** for reasonable performance.
+* All experiments were conducted using **Python 3.9+**. 
+* Training deep learning models requires a **GPU** for reasonable performance. 
 * Raw data and generated outputs are intentionally excluded from version control to ensure reproducibility.
-
