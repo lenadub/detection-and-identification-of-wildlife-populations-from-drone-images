@@ -41,3 +41,42 @@ def load_yolo_annotations(annotation_path, num_classes):
             labels.append(cid)
 
     return bboxes, labels
+
+def filter_invalid_yolo_bboxes(bboxes, labels, eps=1e-6):
+    """
+    Remove YOLO bboxes with zero or negative area.
+    """
+    new_bboxes = []
+    new_labels = []
+
+    for bbox, label in zip(bboxes, labels):
+        x, y, w, h = bbox
+        if w > eps and h > eps:
+            new_bboxes.append(bbox)
+            new_labels.append(label)
+
+    return new_bboxes, new_labels
+
+def sanitize_yolo_bboxes(bboxes, labels, eps=1e-6):
+    """
+    Keep only valid YOLO bboxes:
+    - width > 0 and height > 0
+    - all values finite
+    - (optionally) x,y within [0,1] and w,h within (0,1]
+    """
+    clean_bboxes, clean_labels = [], []
+    for bb, lab in zip(bboxes, labels):
+        x, y, w, h = bb
+
+        # basic numeric checks
+        if not (0 <= x <= 1 and 0 <= y <= 1):
+            continue
+        if not (w > eps and h > eps):
+            continue
+        if not (w <= 1 and h <= 1):
+            continue
+
+        clean_bboxes.append([x, y, w, h])
+        clean_labels.append(lab)
+
+    return clean_bboxes, clean_labels

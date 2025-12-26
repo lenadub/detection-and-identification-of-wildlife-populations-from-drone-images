@@ -21,7 +21,10 @@ def get_train_transforms():
         ],
         bbox_params=A.BboxParams(
             format="yolo",
-            label_fields=["class_labels"]
+            label_fields=["class_labels"],
+            clip=True,
+            min_visibility=0.2,
+            check_each_transform=False
         )
     )
 

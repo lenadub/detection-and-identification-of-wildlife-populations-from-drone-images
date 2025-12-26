@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import Dataset
 
 from .preprocessing import preprocess_image
-from .utils import load_yolo_annotations
+from .utils import load_yolo_annotations, filter_invalid_yolo_bboxes, sanitize_yolo_bboxes
 
 
 class WAIDDataset(Dataset):
@@ -41,12 +41,16 @@ class WAIDDataset(Dataset):
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
+        h, w = image.shape[:2]
+
         bboxes, labels = load_yolo_annotations(
             ann_path,
             self.num_classes
         )
 
-        if self.transforms:
+        bboxes, labels = sanitize_yolo_bboxes(bboxes, labels)
+
+        if self.transforms and len(bboxes) > 0:
             augmented = self.transforms(
                 image=image,
                 bboxes=bboxes,
@@ -56,10 +60,14 @@ class WAIDDataset(Dataset):
             bboxes = augmented["bboxes"]
             labels = augmented["class_labels"]
 
+            # 🔑 FILTER DEGENERATE BOXES
+            bboxes, labels = filter_invalid_yolo_bboxes(bboxes, labels)
+
         image = preprocess_image(image, self.image_size)
 
         return {
             "image": torch.tensor(image).permute(2, 0, 1),
             "bboxes": torch.tensor(bboxes, dtype=torch.float32),
             "labels": torch.tensor(labels, dtype=torch.long),
+            "image_size": (h, w),
         }
