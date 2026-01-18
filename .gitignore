@@ -17,3 +17,6 @@ Thumbs.db
 
 .vscode/
 .idea/
+
+# External datasets (WAID)
+data/external/
